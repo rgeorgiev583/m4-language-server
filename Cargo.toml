@@ -4,4 +4,5 @@ version = "0.1.0"
 authors = ["Radoslav Georgiev <rgeorgiev583@gmail.com>"]
 edition = "2018"
 
-[dependencies]
+[build-dependencies]
+peg = "0.5.7"

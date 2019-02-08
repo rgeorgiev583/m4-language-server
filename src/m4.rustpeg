@@ -1,0 +1,56 @@
+use super::ast::*;
+
+pub source -> Source = tokens:token* { Source { tokens } }
+
+whitespace = [ \n\t]
+literal_char = .
+
+macro_name = [_0-9A-Za-z]+
+in_macro_char = [^(),]
+start_quote = "`"
+end_quote = "'"
+quote = start_quote / end_quote
+quoted_string_char = !quote
+comment_delimiter = "#"
+comment_char = [^\n]
+
+macro_arg_token -> Token =
+    syntax:syntax_token { Token::Syntax(syntax) } /
+    literal_string:$(in_macro_char) { Token::LiteralString(literal_string.to_string()) }
+
+macro_arg -> Source = tokens:macro_arg_token* { Source {tokens} }
+
+macro_invocation -> MacroInvocationToken =
+    name:$(macro_name) "(" whitespace* args:(macro_arg ** ",") ")" {
+        MacroInvocationToken {
+            name: name.to_string(),
+            args: args,
+        }
+    } /
+    name:$(macro_name) {
+        MacroInvocationToken {
+            name: name.to_string(),
+            args: vec![],
+        }
+    }
+
+inner_quoted_string -> String = start:$(start_quote) contents:inside_quoted_string* end:$(end_quote) {
+    [start.to_string(), contents.join(""), end.to_string()].join("")
+}
+
+inside_quoted_string -> String =
+    literal_string:$(quoted_string_char*) { literal_string.to_string() } /
+    literal_string:inner_quoted_string { literal_string }
+
+quoted_string -> String = start_quote contents:inside_quoted_string* end_quote { contents.join("") }
+
+comment -> String = comment_delimiter literal_string:$(comment_char*) "\n" { literal_string.to_string() }
+
+syntax_token -> SyntaxToken =
+    invocation:macro_invocation { SyntaxToken::MacroInvocation(invocation) } /
+    literal_string:quoted_string { SyntaxToken::QuotedString(literal_string) } /
+    literal_string:comment { SyntaxToken::Comment(literal_string) }
+
+token -> Token =
+    syntax:syntax_token { Token::Syntax(syntax) } /
+    literal_string:$(literal_char) { Token::LiteralString(literal_string.to_string()) }
