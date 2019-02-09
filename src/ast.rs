@@ -12,7 +12,7 @@ pub enum Token {
 #[derive(Debug)]
 pub enum SyntaxToken {
     MacroInvocation(MacroInvocationToken),
-    QuotedString(String),
+    //QuotedString(String),
     Comment(String),
 }
 

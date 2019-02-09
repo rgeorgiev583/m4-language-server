@@ -48,7 +48,7 @@ comment -> String = comment_delimiter literal_string:$(comment_char*) "\n" { lit
 
 syntax_token -> SyntaxToken =
     invocation:macro_invocation { SyntaxToken::MacroInvocation(invocation) } /
-    literal_string:quoted_string { SyntaxToken::QuotedString(literal_string) } /
+    //literal_string:quoted_string { SyntaxToken::QuotedString(literal_string) } /
     literal_string:comment { SyntaxToken::Comment(literal_string) }
 
 token -> Token =
