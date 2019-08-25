@@ -9,7 +9,6 @@ macro_name = [_0-9A-Za-z]+
 in_macro_char = [^(),]
 start_quote = "`"
 end_quote = "'"
-quote = start_quote / end_quote
 quoted_string_char = [^`']
 comment_delimiter = "#"
 comment_char = [^\n]
