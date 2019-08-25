@@ -57,24 +57,54 @@ enum Action {
     RenameMacro(String, String),
 }
 
-fn process_input<T: Read>(mut input: T, action: &Action) -> Result<()> {
+fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Result<()> {
     let mut input_str = String::new();
     input.read_to_string(&mut input_str)?;
     let mut source = parser::source(input_str.as_str())?;
     match action {
-        Action::DumpAst => println!("{:?}", source),
+        Action::DumpAst => {
+            if filename != "" {
+                let title = format!("AST of file {}:", filename);
+                println!("{}", title);
+                println!(
+                    "{}",
+                    std::iter::repeat("=").take(title.len()).collect::<String>()
+                );
+            }
+            println!("{:?}", source);
+        }
         Action::PrintMacroDefinitions(macro_name) => {
             let macro_definitions = source.get_macro_definitions(macro_name.as_str());
-            println!("found a total of {} (re)definitions:", macro_definitions.len());
+            println!(
+                "found a total of {} (re)definitions of the `{}` macro in file {}{}",
+                macro_definitions.len(),
+                macro_name,
+                filename,
+                if !macro_definitions.is_empty() {
+                    ":"
+                } else {
+                    ""
+                }
+            );
             for definition in macro_definitions {
-                println!("{}", definition);
+                println!("* {}", definition);
             }
         }
         Action::PrintMacroInvocations(macro_name) => {
             let macro_invocations = source.get_macro_invocations(macro_name.as_str());
-            println!("found a total of {} invocations:", macro_invocations.len());
+            println!(
+                "found a total of {} invocations of the `{}` macro in file {}{}",
+                macro_invocations.len(),
+                macro_name,
+                filename,
+                if !macro_invocations.is_empty() {
+                    ":"
+                } else {
+                    ""
+                }
+            );
             for invocation in macro_invocations {
-                println!("{}", invocation);
+                println!("* {}", invocation);
             }
         }
         Action::RenameMacro(macro_name, new_macro_name) => {
@@ -83,6 +113,7 @@ fn process_input<T: Read>(mut input: T, action: &Action) -> Result<()> {
         }
         _ => {}
     }
+    println!();
     Ok(())
 }
 
@@ -119,8 +150,10 @@ fn main() -> Result<()> {
     if args.is_empty() {
         let stdin = stdin();
         let input = stdin.lock();
-        process_input(input, &action)
+        process_input("", input, &action)
     } else {
-        args.try_for_each(|filename| process_input(File::open(filename)?, &action))
+        args.try_for_each(|filename| {
+            process_input(filename.as_str(), File::open(filename.as_str())?, &action)
+        })
     }
 }
