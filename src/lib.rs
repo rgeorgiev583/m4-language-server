@@ -110,20 +110,21 @@ fn is_undefinition<'a>(invocation: &'a MacroInvocationToken, macro_name: &str) -
 }
 
 impl Source {
-    pub fn get_macro_definition<'a>(
+    pub fn get_macro_definitions<'a>(
         &'a self,
         macro_name: &str,
-    ) -> Option<&'a MacroInvocationToken> {
+    ) -> Vec<&'a MacroInvocationToken> {
+        let mut definitions = vec![];
         for token in self.tokens.iter() {
             if let Token::Syntax(syntax) = token {
                 if let SyntaxToken::MacroInvocation(invocation) = syntax {
                     if is_definition(invocation, macro_name) {
-                        return Some(invocation);
+                        definitions.push(invocation);
                     }
                 }
             }
         }
-        None
+        definitions
     }
 
     pub fn get_macro_invocations<'a>(&'a self, macro_name: &str) -> Vec<&'a MacroInvocationToken> {

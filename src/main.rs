@@ -52,7 +52,7 @@ type Result<T> = std::result::Result<T, Error>;
 enum Action {
     None,
     DumpAst,
-    PrintMacroDefinition(String),
+    PrintMacroDefinitions(String),
     PrintMacroInvocations(String),
     RenameMacro(String, String),
 }
@@ -63,9 +63,11 @@ fn process_input<T: Read>(mut input: T, action: &Action) -> Result<()> {
     let mut source = parser::source(input_str.as_str())?;
     match action {
         Action::DumpAst => println!("{:?}", source),
-        Action::PrintMacroDefinition(macro_name) => {
-            if let Some(macro_definition) = source.get_macro_definition(macro_name.as_str()) {
-                println!("{}", macro_definition);
+        Action::PrintMacroDefinitions(macro_name) => {
+            let macro_definitions = source.get_macro_definitions(macro_name.as_str());
+            println!("found a total of {} (re)definitions:", macro_definitions.len());
+            for definition in macro_definitions {
+                println!("{}", definition);
             }
         }
         Action::PrintMacroInvocations(macro_name) => {
@@ -91,11 +93,11 @@ fn main() -> Result<()> {
         .ok_or(Error::RuntimeError("no subcommand specified".to_string()))?;
     let action = match action_str.as_str() {
         "dump-ast" => Action::DumpAst,
-        "print-macro-definition" => {
+        "print-macro-definitions" => {
             let macro_name = args
                 .next()
                 .ok_or(Error::RuntimeError("no macro name specified".to_string()))?;
-            Action::PrintMacroDefinition(macro_name)
+            Action::PrintMacroDefinitions(macro_name)
         }
         "print-macro-invocations" => {
             let macro_name = args
