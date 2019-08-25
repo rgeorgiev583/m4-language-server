@@ -1,8 +1,52 @@
-use std::env::args;
-use std::fs::File;
-use std::io::Read;
+#![feature(exact_size_is_empty)]
 
-pub use m4_language_server::parser;
+use std::env::args;
+use std::fmt::{self, Display, Formatter};
+use std::fs::File;
+use std::io::{self, stdin, Read};
+
+pub use m4_language_server::parser::{self, ParseError};
+
+#[derive(Debug)]
+enum Error {
+    RuntimeError(String),
+    ParseError(ParseError),
+    IoError(io::Error),
+}
+
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Error::ParseError(error) => Some(error),
+            Error::IoError(error) => Some(error),
+            _ => None,
+        }
+    }
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            Error::RuntimeError(description) => write!(f, "runtime error: {}", description),
+            Error::ParseError(error) => write!(f, "parse error: {}", error),
+            Error::IoError(error) => write!(f, "I/O error: {}", error),
+        }
+    }
+}
+
+impl From<ParseError> for Error {
+    fn from(error: ParseError) -> Self {
+        Error::ParseError(error)
+    }
+}
+
+impl From<io::Error> for Error {
+    fn from(error: io::Error) -> Self {
+        Error::IoError(error)
+    }
+}
+
+type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
 enum Action {
@@ -13,18 +57,15 @@ enum Action {
     RenameMacro(String, String),
 }
 
-fn process_input<T: Read>(mut input: T, action: &Action) {
+fn process_input<T: Read>(mut input: T, action: &Action) -> Result<()> {
     let mut input_str = String::new();
-    input.read_to_string(&mut input_str).unwrap();
-    let mut source = parser::source(input_str.as_str()).unwrap();
-
+    input.read_to_string(&mut input_str)?;
+    let mut source = parser::source(input_str.as_str())?;
     match action {
         Action::DumpAst => println!("{:?}", source),
         Action::PrintMacroDefinition(macro_name) => {
             if let Some(macro_definition) = source.get_macro_definition(macro_name.as_str()) {
                 println!("{}", macro_definition);
-            } else {
-                println!("macro definition not found");
             }
         }
         Action::PrintMacroInvocations(macro_name) => {
@@ -38,32 +79,46 @@ fn process_input<T: Read>(mut input: T, action: &Action) {
             source.rename_macro(macro_name.as_str(), new_macro_name.as_str());
             println!("{}", source);
         }
-        _ => eprintln!("error"),
+        _ => {}
     }
+    Ok(())
 }
 
-fn main() {
+fn main() -> Result<()> {
     let mut args = args().skip(1);
-    if let Some(action_str) = args.next() {
-        let action = match action_str.as_str() {
-            "dump-ast" => Action::DumpAst,
-            "print-macro-definition" => {
-                let macro_name = args.next().unwrap();
-                Action::PrintMacroDefinition(macro_name)
-            }
-            "print-macro-invocations" => {
-                let macro_name = args.next().unwrap();
-                Action::PrintMacroInvocations(macro_name)
-            }
-            "rename-macro" => {
-                let macro_name = args.next().unwrap();
-                let new_macro_name = args.next().unwrap();
-                Action::RenameMacro(macro_name, new_macro_name)
-            }
-            _ => Action::None,
-        };
-        if args.len() > 0 {
-            args.for_each(|filename| process_input(File::open(filename).unwrap(), &action))
-        };
+    let action_str = args
+        .next()
+        .ok_or(Error::RuntimeError("no subcommand specified".to_string()))?;
+    let action = match action_str.as_str() {
+        "dump-ast" => Action::DumpAst,
+        "print-macro-definition" => {
+            let macro_name = args
+                .next()
+                .ok_or(Error::RuntimeError("no macro name specified".to_string()))?;
+            Action::PrintMacroDefinition(macro_name)
+        }
+        "print-macro-invocations" => {
+            let macro_name = args
+                .next()
+                .ok_or(Error::RuntimeError("no macro name specified".to_string()))?;
+            Action::PrintMacroInvocations(macro_name)
+        }
+        "rename-macro" => {
+            let macro_name = args.next().ok_or(Error::RuntimeError(
+                "no old macro name specified".to_string(),
+            ))?;
+            let new_macro_name = args.next().ok_or(Error::RuntimeError(
+                "no new macro name specified".to_string(),
+            ))?;
+            Action::RenameMacro(macro_name, new_macro_name)
+        }
+        _ => Action::None,
+    };
+    if args.is_empty() {
+        let stdin = stdin();
+        let input = stdin.lock();
+        process_input(input, &action)
+    } else {
+        args.try_for_each(|filename| process_input(File::open(filename)?, &action))
     }
 }
