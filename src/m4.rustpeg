@@ -1,6 +1,6 @@
 use super::ast::*;
 
-pub source -> Source = tokens:token* { Source { tokens } }
+pub parse -> Source = tokens:token* { Source { tokens } }
 
 whitespace = [ \n\t]
 literal_char = .

@@ -60,7 +60,7 @@ enum Action {
 fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Result<()> {
     let mut input_str = String::new();
     input.read_to_string(&mut input_str)?;
-    let mut source = parser::source(input_str.as_str())?;
+    let mut source = parser::parse(input_str.as_str())?;
     match action {
         Action::DumpAst => {
             if filename != "" {
