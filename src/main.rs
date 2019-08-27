@@ -64,7 +64,7 @@ fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Resu
     match action {
         Action::DumpAst => {
             if filename != "" {
-                let title = format!("AST of file {}:", filename);
+                let title = format!("AST of file `{}`:", filename);
                 println!("{}", title);
                 println!(
                     "{}",
@@ -76,7 +76,7 @@ fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Resu
         Action::PrintMacroDefinitions(macro_name) => {
             let macro_definitions = source.get_macro_definitions(macro_name.as_str());
             println!(
-                "found a total of {} (re)definitions of the `{}` macro in file {}{}",
+                "found a total of {} (re)definitions of the `{}` macro in file `{}`{}",
                 macro_definitions.len(),
                 macro_name,
                 filename,
@@ -87,13 +87,13 @@ fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Resu
                 }
             );
             for definition in macro_definitions {
-                println!("* {}", definition);
+                println!("* `{}`", definition);
             }
         }
         Action::PrintMacroInvocations(macro_name) => {
             let macro_invocations = source.get_macro_invocations(macro_name.as_str());
             println!(
-                "found a total of {} invocations of the `{}` macro in file {}{}",
+                "found a total of {} invocations of the `{}` macro in file `{}`{}",
                 macro_invocations.len(),
                 macro_name,
                 filename,
@@ -104,7 +104,7 @@ fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Resu
                 }
             );
             for invocation in macro_invocations {
-                println!("* {}", invocation);
+                println!("* `{}`", invocation);
             }
         }
         Action::RenameMacro(macro_name, new_macro_name) => {
