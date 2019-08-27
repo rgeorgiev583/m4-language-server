@@ -2,7 +2,7 @@
 
 use std::env::args;
 use std::fmt::{self, Display, Formatter};
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{self, stdin, Read};
 
 pub use m4_language_server::parser::{self, ParseError};
@@ -54,7 +54,7 @@ enum Action {
     DumpAst,
     PrintMacroDefinitions(String),
     PrintMacroInvocations(String),
-    RenameMacro(String, String),
+    RenameMacro(String, String, bool),
 }
 
 fn print_underlined_title(title: &str) {
@@ -113,8 +113,8 @@ fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Resu
                 println!("* `{}` at offset {}", invocation, invocation.offset);
             }
         }
-        Action::RenameMacro(macro_name, new_macro_name) => {
-            if filename != "" {
+        Action::RenameMacro(macro_name, new_macro_name, is_inplace) => {
+            if !*is_inplace && filename != "" {
                 let title = format!(
                     "contents of file `{}` after renaming of the `{}` macro to `{}`:",
                     filename, macro_name, new_macro_name
@@ -122,7 +122,16 @@ fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Resu
                 print_underlined_title(title.as_str());
             }
             input_ast.rename_macro(macro_name.as_str(), new_macro_name.as_str());
-            print!("{}", input_ast);
+            if *is_inplace {
+                if filename == "" {
+                    return Err(Error::RuntimeError(
+                        "cannot rename macro in-place for the standard input".to_string(),
+                    ));
+                }
+                fs::write(filename, input_ast.to_string())?;
+            } else {
+                print!("{}", input_ast);
+            }
         }
         _ => {}
     }
@@ -149,14 +158,18 @@ fn main() -> Result<()> {
                 .ok_or(Error::RuntimeError("no macro name specified".to_string()))?;
             Action::PrintMacroInvocations(macro_name)
         }
-        "rename-macro" => {
+        "rename-macro" | "rename-macro-inplace" => {
             let macro_name = args.next().ok_or(Error::RuntimeError(
                 "no old macro name specified".to_string(),
             ))?;
             let new_macro_name = args.next().ok_or(Error::RuntimeError(
                 "no new macro name specified".to_string(),
             ))?;
-            Action::RenameMacro(macro_name, new_macro_name)
+            Action::RenameMacro(
+                macro_name,
+                new_macro_name,
+                action_str == "rename-macro-inplace",
+            )
         }
         _ => Action::None,
     };
