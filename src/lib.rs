@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter, Result};
 
 pub mod ast {
     #[derive(Debug)]
-    pub struct Source {
+    pub struct TokenStream {
         pub tokens: Vec<Token>,
     }
 
@@ -28,7 +28,7 @@ pub mod ast {
     #[derive(Debug)]
     pub struct MacroInvocationToken {
         pub name: String,
-        pub args: Vec<Source>,
+        pub args: Vec<TokenStream>,
     }
 }
 
@@ -38,7 +38,7 @@ pub mod parser {
 
 pub use ast::*;
 
-impl Display for Source {
+impl Display for TokenStream {
     fn fmt(&self, f: &mut Formatter) -> Result {
         for token in self.tokens.iter() {
             write!(f, "{}", token)?;
@@ -123,7 +123,7 @@ fn is_undefinition<'a>(invocation: &'a MacroInvocationToken, macro_name: &str) -
     is_first_arg_of_invocation_with_name(invocation, "undefine", macro_name)
 }
 
-impl Source {
+impl TokenStream {
     pub fn get_macro_definitions<'a>(&'a self, macro_name: &str) -> Vec<&'a Token> {
         let mut definitions = vec![];
         for token in self.tokens.iter() {
