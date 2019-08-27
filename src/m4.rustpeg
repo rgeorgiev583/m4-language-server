@@ -14,8 +14,16 @@ comment_delimiter = "#"
 comment_char = [^\n]
 
 macro_arg_token -> Token =
-    syntax:syntax_token { Token::Syntax(syntax) } /
-    literal_string:$(in_macro_char) { Token::LiteralString(literal_string.to_string()) }
+    offset:#position content:macro_arg_token_content {
+        Token {
+            content: content,
+            offset: offset,
+        }
+    }
+
+macro_arg_token_content -> BaseToken =
+    syntax:syntax_token { BaseToken::Syntax(syntax) } /
+    literal_string:$(in_macro_char) { BaseToken::LiteralString(literal_string.to_string()) }
 
 macro_arg -> Source = tokens:macro_arg_token* { Source {tokens} }
 
@@ -43,5 +51,13 @@ syntax_token -> SyntaxToken =
     literal_string:comment { SyntaxToken::Comment(literal_string) }
 
 token -> Token =
-    syntax:syntax_token { Token::Syntax(syntax) } /
-    literal_string:$(literal_char) { Token::LiteralString(literal_string.to_string()) }
+    offset:#position content:token_content {
+        Token {
+            content: content,
+            offset: offset,
+        }
+    }
+
+token_content -> BaseToken =
+    syntax:syntax_token { BaseToken::Syntax(syntax) } /
+    literal_string:$(literal_char) { BaseToken::LiteralString(literal_string.to_string()) }

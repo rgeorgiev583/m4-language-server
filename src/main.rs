@@ -87,7 +87,7 @@ fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Resu
                 }
             );
             for definition in macro_definitions {
-                println!("* `{}`", definition);
+                println!("* `{}` at offset {}", definition, definition.offset);
             }
         }
         Action::PrintMacroInvocations(macro_name) => {
@@ -104,7 +104,7 @@ fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Resu
                 }
             );
             for invocation in macro_invocations {
-                println!("* `{}`", invocation);
+                println!("* `{}` at offset {}", invocation, invocation.offset);
             }
         }
         Action::RenameMacro(macro_name, new_macro_name) => {

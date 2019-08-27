@@ -7,7 +7,13 @@ pub mod ast {
     }
 
     #[derive(Debug)]
-    pub enum Token {
+    pub struct Token {
+        pub content: BaseToken,
+        pub offset: usize,
+    }
+
+    #[derive(Debug)]
+    pub enum BaseToken {
         Syntax(SyntaxToken),
         LiteralString(String),
     }
@@ -43,9 +49,15 @@ impl Display for Source {
 
 impl Display for Token {
     fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f, "{}", self.content)
+    }
+}
+
+impl Display for BaseToken {
+    fn fmt(&self, f: &mut Formatter) -> Result {
         match self {
-            Token::Syntax(syntax) => write!(f, "{}", syntax),
-            Token::LiteralString(string) => write!(f, "{}", string),
+            BaseToken::Syntax(syntax) => write!(f, "{}", syntax),
+            BaseToken::LiteralString(string) => write!(f, "{}", string),
         }
     }
 }
@@ -81,19 +93,21 @@ fn is_first_arg_of_invocation_with_name<'a>(
 ) -> bool {
     if invocation.name == invocation_name {
         if let Some(first_arg) = invocation.args.first() {
-            if let Some(Token::Syntax(syntax)) = first_arg.tokens.first() {
-                match syntax {
-                    SyntaxToken::MacroInvocation(inner_invocation) => {
-                        if inner_invocation.name == first_arg_name {
-                            return true;
+            if let Some(token) = first_arg.tokens.first() {
+                if let BaseToken::Syntax(syntax) = &token.content {
+                    match syntax {
+                        SyntaxToken::MacroInvocation(inner_invocation) => {
+                            if inner_invocation.name == first_arg_name {
+                                return true;
+                            }
                         }
-                    }
-                    SyntaxToken::QuotedString(quoted_string) => {
-                        if quoted_string == first_arg_name {
-                            return true;
+                        SyntaxToken::QuotedString(quoted_string) => {
+                            if quoted_string == first_arg_name {
+                                return true;
+                            }
                         }
+                        _ => {}
                     }
-                    _ => {}
                 }
             }
         }
@@ -110,13 +124,13 @@ fn is_undefinition<'a>(invocation: &'a MacroInvocationToken, macro_name: &str) -
 }
 
 impl Source {
-    pub fn get_macro_definitions<'a>(&'a self, macro_name: &str) -> Vec<&'a MacroInvocationToken> {
+    pub fn get_macro_definitions<'a>(&'a self, macro_name: &str) -> Vec<&'a Token> {
         let mut definitions = vec![];
         for token in self.tokens.iter() {
-            if let Token::Syntax(syntax) = token {
+            if let BaseToken::Syntax(syntax) = &token.content {
                 if let SyntaxToken::MacroInvocation(invocation) = syntax {
                     if is_definition(invocation, macro_name) {
-                        definitions.push(invocation);
+                        definitions.push(token);
                     }
                 }
             }
@@ -124,17 +138,17 @@ impl Source {
         definitions
     }
 
-    pub fn get_macro_invocations<'a>(&'a self, macro_name: &str) -> Vec<&'a MacroInvocationToken> {
+    pub fn get_macro_invocations<'a>(&'a self, macro_name: &str) -> Vec<&'a Token> {
         let mut invocations = vec![];
         let mut is_defined = false;
         for token in self.tokens.iter() {
-            if let Token::Syntax(syntax) = token {
+            if let BaseToken::Syntax(syntax) = &token.content {
                 if let SyntaxToken::MacroInvocation(invocation) = syntax {
                     if is_defined && invocation.name == macro_name {
-                        invocations.push(invocation);
-                    } else if is_definition(&invocation, macro_name) {
+                        invocations.push(token);
+                    } else if is_definition(invocation, macro_name) {
                         is_defined = true;
-                    } else if is_undefinition(&invocation, macro_name) {
+                    } else if is_undefinition(invocation, macro_name) {
                         is_defined = false;
                     }
                 }
@@ -146,14 +160,14 @@ impl Source {
     pub fn rename_macro<'a>(&'a mut self, macro_name: &str, new_macro_name: &str) {
         let mut is_defined = false;
         for token in self.tokens.iter_mut() {
-            if let Token::Syntax(syntax) = token {
+            if let BaseToken::Syntax(syntax) = &mut token.content {
                 if let SyntaxToken::MacroInvocation(invocation) = syntax {
                     if is_defined && invocation.name == macro_name {
                         invocation.name = new_macro_name.to_string();
                     } else if invocation.name == "define" {
                         if let Some(first_arg) = invocation.args.first_mut() {
                             if let Some(first_token) = first_arg.tokens.first_mut() {
-                                if let Token::Syntax(syntax) = first_token {
+                                if let BaseToken::Syntax(syntax) = &mut first_token.content {
                                     match syntax {
                                         SyntaxToken::MacroInvocation(inner_invocation) => {
                                             if inner_invocation.name == macro_name {
