@@ -35,7 +35,7 @@ pub use ast::*;
 impl Display for Source {
     fn fmt(&self, f: &mut Formatter) -> Result {
         for token in self.tokens.iter() {
-            write!(f, "{}", token)?
+            write!(f, "{}", token)?;
         }
         Ok(())
     }
