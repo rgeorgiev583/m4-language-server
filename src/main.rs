@@ -79,34 +79,36 @@ fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Resu
         }
         Action::PrintMacroDefinitions(macro_name) => {
             let macro_definitions = input_ast.get_macro_definitions(macro_name.as_str());
-            println!(
-                "found a total of {} (re)definitions of the `{}` macro in file `{}`{}",
+            print!(
+                "found a total of {} (re)definitions of the `{}` macro",
                 macro_definitions.len(),
-                macro_name,
-                filename,
-                if !macro_definitions.is_empty() {
-                    ":"
-                } else {
-                    ""
-                }
+                macro_name
             );
+            if filename != "" {
+                print!(" in file `{}`", filename);
+            }
+            if !macro_definitions.is_empty() {
+                print!(":");
+            }
+            println!();
             for definition in macro_definitions {
                 println!("* `{}` at offset {}", definition, definition.offset);
             }
         }
         Action::PrintMacroInvocations(macro_name) => {
             let macro_invocations = input_ast.get_macro_invocations(macro_name.as_str());
-            println!(
-                "found a total of {} invocations of the `{}` macro in file `{}`{}",
+            print!(
+                "found a total of {} invocations of the `{}` macro",
                 macro_invocations.len(),
                 macro_name,
-                filename,
-                if !macro_invocations.is_empty() {
-                    ":"
-                } else {
-                    ""
-                }
             );
+            if filename != "" {
+                print!(" in file `{}`", filename);
+            }
+            if !macro_invocations.is_empty() {
+                print!(":");
+            }
+            println!();
             for invocation in macro_invocations {
                 println!("* `{}` at offset {}", invocation, invocation.offset);
             }
