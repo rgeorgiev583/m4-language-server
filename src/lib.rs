@@ -85,10 +85,18 @@ impl Source {
                     if invocation.name == "define" {
                         if let Some(first_arg) = invocation.args.first() {
                             if let Some(Token::Syntax(syntax)) = first_arg.tokens.first() {
-                                if let SyntaxToken::MacroInvocation(inner_invocation) = syntax {
-                                    if inner_invocation.name == macro_name {
-                                        return Some(invocation);
+                                match syntax {
+                                    SyntaxToken::MacroInvocation(inner_invocation) => {
+                                        if inner_invocation.name == macro_name {
+                                            return Some(invocation);
+                                        }
                                     }
+                                    SyntaxToken::QuotedString(quoted_string) => {
+                                        if quoted_string == macro_name {
+                                            return Some(invocation);
+                                        }
+                                    }
+                                    _ => {}
                                 }
                             }
                         }
