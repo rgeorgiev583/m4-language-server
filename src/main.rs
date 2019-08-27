@@ -57,6 +57,14 @@ enum Action {
     RenameMacro(String, String),
 }
 
+fn print_underlined_title(title: &str) {
+    println!("{}", title);
+    println!(
+        "{}",
+        std::iter::repeat("=").take(title.len()).collect::<String>()
+    );
+}
+
 fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Result<()> {
     let mut input_str = String::new();
     input.read_to_string(&mut input_str)?;
@@ -65,11 +73,7 @@ fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Resu
         Action::DumpAst => {
             if filename != "" {
                 let title = format!("AST of file `{}`:", filename);
-                println!("{}", title);
-                println!(
-                    "{}",
-                    std::iter::repeat("=").take(title.len()).collect::<String>()
-                );
+                print_underlined_title(title.as_str());
             }
             println!("{:?}", input_ast);
         }
@@ -108,6 +112,13 @@ fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Resu
             }
         }
         Action::RenameMacro(macro_name, new_macro_name) => {
+            if filename != "" {
+                let title = format!(
+                    "contents of file `{}` after renaming of the `{}` macro to `{}`:",
+                    filename, macro_name, new_macro_name
+                );
+                print_underlined_title(title.as_str());
+            }
             input_ast.rename_macro(macro_name.as_str(), new_macro_name.as_str());
             println!("{}", input_ast);
         }
