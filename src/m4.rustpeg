@@ -10,7 +10,7 @@ in_macro_char = [^(),]
 start_quote = "`"
 end_quote = "'"
 quote = start_quote / end_quote
-quoted_string_char = !quote
+quoted_string_char = [^`']
 comment_delimiter = "#"
 comment_char = [^\n]
 
@@ -34,21 +34,13 @@ macro_invocation -> MacroInvocationToken =
         }
     }
 
-inner_quoted_string -> String = start:$(start_quote) contents:inside_quoted_string* end:$(end_quote) {
-    [start.to_string(), contents.join(""), end.to_string()].join("")
-}
-
-inside_quoted_string -> String =
-    literal_string:$(quoted_string_char*) { literal_string.to_string() } /
-    literal_string:inner_quoted_string { literal_string }
-
-quoted_string -> String = start_quote contents:inside_quoted_string* end_quote { contents.join("") }
+quoted_string -> String = start_quote contents:$(quoted_string_char*) end_quote { contents.to_string() }
 
 comment -> String = comment_delimiter literal_string:$(comment_char*) "\n" { literal_string.to_string() }
 
 syntax_token -> SyntaxToken =
     invocation:macro_invocation { SyntaxToken::MacroInvocation(invocation) } /
-    //literal_string:quoted_string { SyntaxToken::QuotedString(literal_string) } /
+    literal_string:quoted_string { SyntaxToken::QuotedString(literal_string) } /
     literal_string:comment { SyntaxToken::Comment(literal_string) }
 
 token -> Token =

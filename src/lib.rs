@@ -15,7 +15,7 @@ pub mod ast {
     #[derive(Debug)]
     pub enum SyntaxToken {
         MacroInvocation(MacroInvocationToken),
-        //QuotedString(String),
+        QuotedString(String),
         Comment(String),
     }
 
@@ -54,6 +54,7 @@ impl Display for SyntaxToken {
     fn fmt(&self, f: &mut Formatter) -> Result {
         match self {
             SyntaxToken::MacroInvocation(invocation) => write!(f, "{}", invocation),
+            SyntaxToken::QuotedString(invocation) => write!(f, "`{}'", invocation),
             SyntaxToken::Comment(comment) => write!(f, "#{}\n", comment),
         }
     }
