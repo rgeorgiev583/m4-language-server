@@ -60,7 +60,7 @@ enum Action {
 fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Result<()> {
     let mut input_str = String::new();
     input.read_to_string(&mut input_str)?;
-    let mut source = parser::parse(input_str.as_str())?;
+    let mut input_ast = parser::parse(input_str.as_str())?;
     match action {
         Action::DumpAst => {
             if filename != "" {
@@ -71,10 +71,10 @@ fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Resu
                     std::iter::repeat("=").take(title.len()).collect::<String>()
                 );
             }
-            println!("{:?}", source);
+            println!("{:?}", input_ast);
         }
         Action::PrintMacroDefinitions(macro_name) => {
-            let macro_definitions = source.get_macro_definitions(macro_name.as_str());
+            let macro_definitions = input_ast.get_macro_definitions(macro_name.as_str());
             println!(
                 "found a total of {} (re)definitions of the `{}` macro in file `{}`{}",
                 macro_definitions.len(),
@@ -91,7 +91,7 @@ fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Resu
             }
         }
         Action::PrintMacroInvocations(macro_name) => {
-            let macro_invocations = source.get_macro_invocations(macro_name.as_str());
+            let macro_invocations = input_ast.get_macro_invocations(macro_name.as_str());
             println!(
                 "found a total of {} invocations of the `{}` macro in file `{}`{}",
                 macro_invocations.len(),
@@ -108,8 +108,8 @@ fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Resu
             }
         }
         Action::RenameMacro(macro_name, new_macro_name) => {
-            source.rename_macro(macro_name.as_str(), new_macro_name.as_str());
-            println!("{}", source);
+            input_ast.rename_macro(macro_name.as_str(), new_macro_name.as_str());
+            println!("{}", input_ast);
         }
         _ => {}
     }
