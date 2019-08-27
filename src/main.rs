@@ -122,7 +122,7 @@ fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Resu
                 print_underlined_title(title.as_str());
             }
             input_ast.rename_macro(macro_name.as_str(), new_macro_name.as_str());
-            println!("{}", input_ast);
+            print!("{}", input_ast);
         }
         _ => {}
     }
