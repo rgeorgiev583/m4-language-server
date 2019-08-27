@@ -138,9 +138,10 @@ impl TokenStream {
         definitions
     }
 
-    pub fn get_macro_invocations<'a>(&'a self, macro_name: &str) -> Vec<&'a Token> {
+    pub fn get_macro_invocations<'a>(&'a self, macro_name: &str) -> Option<Vec<&'a Token>> {
         let mut invocations = vec![];
         let mut is_defined = false;
+        let mut does_definition_exist = false;
         for token in self.tokens.iter() {
             if let BaseToken::Syntax(syntax) = &token.content {
                 if let SyntaxToken::MacroInvocation(invocation) = syntax {
@@ -148,17 +149,23 @@ impl TokenStream {
                         invocations.push(token);
                     } else if is_definition(invocation, macro_name) {
                         is_defined = true;
+                        does_definition_exist = true;
                     } else if is_undefinition(invocation, macro_name) {
                         is_defined = false;
                     }
                 }
             }
         }
-        invocations
+        if does_definition_exist {
+            Some(invocations)
+        } else {
+            None
+        }
     }
 
-    pub fn rename_macro<'a>(&'a mut self, macro_name: &str, new_macro_name: &str) {
+    pub fn rename_macro<'a>(&'a mut self, macro_name: &str, new_macro_name: &str) -> bool {
         let mut is_defined = false;
+        let mut does_definition_exist = false;
         for token in self.tokens.iter_mut() {
             if let BaseToken::Syntax(syntax) = &mut token.content {
                 if let SyntaxToken::MacroInvocation(invocation) = syntax {
@@ -173,12 +180,14 @@ impl TokenStream {
                                             if inner_invocation.name == macro_name {
                                                 inner_invocation.name = new_macro_name.to_string();
                                                 is_defined = true;
+                                                does_definition_exist = true;
                                             }
                                         }
                                         SyntaxToken::QuotedString(quoted_string) => {
                                             if quoted_string == macro_name {
                                                 *quoted_string = new_macro_name.to_string();
                                                 is_defined = true;
+                                                does_definition_exist = true;
                                             }
                                         }
                                         _ => {}
@@ -192,5 +201,6 @@ impl TokenStream {
                 }
             }
         }
+        does_definition_exist
     }
 }

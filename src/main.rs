@@ -96,21 +96,31 @@ fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Resu
             }
         }
         Action::PrintMacroInvocations(macro_name) => {
-            let macro_invocations = input_ast.get_macro_invocations(macro_name.as_str());
-            print!(
-                "found a total of {} invocations of the `{}` macro",
-                macro_invocations.len(),
-                macro_name,
-            );
-            if filename != "" {
-                print!(" in file `{}`", filename);
-            }
-            if !macro_invocations.is_empty() {
-                print!(":");
-            }
-            println!();
-            for invocation in macro_invocations {
-                println!("* `{}` at offset {}", invocation, invocation.offset);
+            match input_ast.get_macro_invocations(macro_name.as_str()) {
+                Some(macro_invocations) => {
+                    print!(
+                        "found a total of {} invocations of the `{}` macro",
+                        macro_invocations.len(),
+                        macro_name,
+                    );
+                    if filename != "" {
+                        print!(" in file `{}`", filename);
+                    }
+                    if !macro_invocations.is_empty() {
+                        print!(":");
+                    }
+                    println!();
+                    for invocation in macro_invocations {
+                        println!("* `{}` at offset {}", invocation, invocation.offset);
+                    }
+                }
+                None => {
+                    print!("the `{}` macro has not been defined", macro_name);
+                    if filename != "" {
+                        print!(" in file `{}`", filename);
+                    }
+                    println!();
+                }
             }
         }
         Action::RenameMacro(macro_name, new_macro_name, is_inplace) => {
@@ -121,16 +131,23 @@ fn process_input<T: Read>(filename: &str, mut input: T, action: &Action) -> Resu
                 );
                 print_underlined_title(title.as_str());
             }
-            input_ast.rename_macro(macro_name.as_str(), new_macro_name.as_str());
-            if *is_inplace {
-                if filename == "" {
-                    return Err(Error::RuntimeError(
-                        "cannot rename macro in-place for the standard input".to_string(),
-                    ));
+            if input_ast.rename_macro(macro_name.as_str(), new_macro_name.as_str()) {
+                if *is_inplace {
+                    if filename == "" {
+                        return Err(Error::RuntimeError(
+                            "cannot rename macro in-place for the standard input".to_string(),
+                        ));
+                    }
+                    fs::write(filename, input_ast.to_string())?;
+                } else {
+                    print!("{}", input_ast);
                 }
-                fs::write(filename, input_ast.to_string())?;
             } else {
-                print!("{}", input_ast);
+                print!("the `{}` macro has not been defined", macro_name);
+                if filename != "" {
+                    print!(" in file `{}`", filename);
+                }
+                println!();
             }
         }
         _ => {}
